@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentiment Analysis</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --positive-color: #28a745;
+            --negative-color: #dc3545;
+            --neutral-color: #6c757d;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            line-height: 1.6;
+            background-color: #f8f9fa;
+            padding-bottom: 2rem;
+        }
+
+        .form-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+            margin: 2rem 0;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+        }
+
+        .form-group h3 {
+            color: #2c3e50;
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+        }
+
+        .input-group {
+            margin-bottom: 1rem;
+        }
+
+        .stats-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+
+        .sentiment-stats {
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+            margin: 1rem 0;
+        }
+
+        .stat-item {
+            padding: 1rem;
+            border-radius: 8px;
+            min-width: 150px;
+        }
+
+        .stat-item.positive { background-color: rgba(40, 167, 69, 0.1); }
+        .stat-item.negative { background-color: rgba(220, 53, 69, 0.1); }
+        .stat-item.neutral { background-color: rgba(108, 117, 125, 0.1); }
+
+        .content-item {
+            background: white;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-left: 4px solid #dee2e6;
+        }
+
+        .content-item.positive { border-left-color: var(--positive-color); }
+        .content-item.negative { border-left-color: var(--negative-color); }
+        .content-item.neutral { border-left-color: var(--neutral-color); }
+
+        .sentiment-label {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 15px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .sentiment-label.positive { 
+            background-color: rgba(40, 167, 69, 0.1);
+            color: var(--positive-color);
+        }
+        .sentiment-label.negative { 
+            background-color: rgba(220, 53, 69, 0.1);
+            color: var(--negative-color);
+        }
+        .sentiment-label.neutral { 
+            background-color: rgba(108, 117, 125, 0.1);
+            color: var(--neutral-color);
+        }
+
+        .source-link {
+            color: #0366d6;
+            text-decoration: none;
+        }
+
+        .source-link:hover {
+            text-decoration: underline;
+        }
+
+        .back-button {
+            margin: 1rem 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show mt-3" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Analysis Form -->
+        <div class="form-section">
+            <h2 class="text-center mb-4">Social Media Sentiment Analysis</h2>
+            <form method="POST">
+                <div class="form-group">
+                    <h3><i class="fab fa-twitter"></i> Twitter Analysis</h3>
+                    <div class="input-group">
+                        <span class="input-group-text">@</span>
+                        <input type="text" class="form-control" name="userid" placeholder="Twitter Username">
+                    </div>
+                    <div class="input-group">
+                        <span class="input-group-text">#</span>
+                        <input type="text" class="form-control" name="hashtag" placeholder="Hashtag">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <h3><i class="fab fa-reddit"></i> Reddit Analysis</h3>
+                    <div class="input-group">
+                        <span class="input-group-text">r/</span>
+                        <input type="text" class="form-control" name="subreddit" placeholder="Subreddit Name">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <h3><i class="far fa-newspaper"></i> News Analysis</h3>
+                    <input type="text" class="form-control" name="news_query" placeholder="News Search Query">
+                </div>
+                
+                <div class="text-center">
+                    <button type="submit" class="btn btn-primary btn-lg">Analyze</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Analysis Results -->
+        {% if analyzed_content %}
+            <div class="results-section">
+                <div class="stats-card">
+                    <h3 class="text-center">Analysis Results</h3>
+                    <div class="sentiment-stats">
+                        <div class="stat-item positive">
+                            <h4>Positive</h4>
+                            <p class="h2">{{ positive }}%</p>
+                        </div>
+                        <div class="stat-item negative">
+                            <h4>Negative</h4>
+                            <p class="h2">{{ negative }}%</p>
+                        </div>
+                        <div class="stat-item neutral">
+                            <h4>Neutral</h4>
+                            <p class="h2">{{ neutral }}%</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Grouped Content -->
+                {% if grouped_content %}
+                    <div class="content-groups">
+                        {% for sentiment, items in grouped_content.items() %}
+                            {% if items %}
+                                <h4>{{ sentiment|title }} {{ source_type }} ({{ items|length }})</h4>
+                                {% for item in items %}
+                                    <div class="content-item {{ sentiment }}">
+                                        <p class="mb-2">{{ item.text }}</p>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="sentiment-label {{ sentiment }}">
+                                                {{ sentiment|title }} ({{ "%.1f"|format(item.ml_confidence * 100) }}%)
+                                            </span>
+                                            {% if item.url %}
+                                                <a href="{{ item.url }}" class="source-link" target="_blank">
+                                                    View Original <i class="fas fa-external-link-alt"></i>
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                        {% if item.score is defined %}
+                                            <small class="text-muted">Score: {{ item.score }}</small>
+                                        {% endif %}
+                                        <div class="mt-2">
+                                            <small class="text-muted">Source: {{ item.source }}</small>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
+
+        <div class="back-button">
+            <a href="/" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left"></i> Back to Home
+            </a>
+        </div>
+    </div>
+
+    <!-- Font Awesome -->
+    <script src="https://kit.fontawesome.com/your-kit-code.js" crossorigin="anonymous"></script>
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
